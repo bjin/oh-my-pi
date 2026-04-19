@@ -7,7 +7,11 @@ import type { Api, Model, ToolChoice } from "@oh-my-pi/pi-ai";
 export function buildNamedToolChoice(toolName: string, model?: Model<Api>): ToolChoice | undefined {
 	if (!model) return undefined;
 
-	if (model.api === "anthropic-messages" || model.api === "bedrock-converse-stream") {
+	if (
+		model.api === "anthropic-messages" ||
+		model.api === "anthropic-vertex" ||
+		model.api === "bedrock-converse-stream"
+	) {
 		return { type: "tool", name: toolName };
 	}
 
