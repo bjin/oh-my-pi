@@ -126,6 +126,7 @@ Also exposed:
 - `pi.logger`
 - `pi.typebox`
 - `pi.pi` (package exports)
+- `pi.ai.streamAnthropic` (host Anthropic stream seam for extension providers)
 
 ### Message delivery semantics
 

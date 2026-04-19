@@ -934,6 +934,12 @@ export interface RegisteredCommand {
 // biome-ignore lint/suspicious/noConfusingVoidType: void allows bare return statements
 export type ExtensionHandler<E, R = undefined> = (event: E, ctx: ExtensionContext) => Promise<R | void> | R | void;
 
+/** AI runtime seams intentionally exposed to extensions. */
+export interface ExtensionAI {
+	/** Delegate a request into the host's built-in Anthropic streaming path. */
+	streamAnthropic: typeof import("@oh-my-pi/pi-ai").streamAnthropic;
+}
+
 /**
  * ExtensionAPI passed to extension factory functions.
  */
@@ -950,6 +956,9 @@ export interface ExtensionAPI {
 
 	/** Injected pi-coding-agent exports for accessing SDK utilities */
 	pi: typeof piCodingAgent;
+
+	/** Injected AI helpers for extension-safe access to host runtime streams. */
+	ai: ExtensionAI;
 
 	// =========================================================================
 	// Event Subscription
