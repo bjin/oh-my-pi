@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoided loading native addons as a side effect of importing the model builder and probe-related provider helpers.
+
 ## [17.0.2] - 2026-07-17
 
 ### Changed

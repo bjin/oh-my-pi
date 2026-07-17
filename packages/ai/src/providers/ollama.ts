@@ -1,4 +1,6 @@
-import { fetchWithRetry, parseStreamingJson, readJsonl } from "@oh-my-pi/pi-utils";
+import { fetchWithRetry } from "@oh-my-pi/pi-utils/fetch-retry";
+import { parseStreamingJson } from "@oh-my-pi/pi-utils/json-parse";
+import { readJsonl } from "@oh-my-pi/pi-utils/stream";
 import * as AIError from "../error";
 import { getEnvApiKey } from "../stream";
 import type {

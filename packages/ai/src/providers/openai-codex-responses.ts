@@ -8,17 +8,14 @@ import {
 	OPENAI_HEADER_VALUES,
 	OPENAI_HEADERS,
 } from "@oh-my-pi/pi-catalog/wire/codex";
-import {
-	$env,
-	$flag,
-	asRecord,
-	fetchWithRetry,
-	getInstallId,
-	logger,
-	parseStreamingJson,
-	readSseJson,
-	structuredCloneJSON,
-} from "@oh-my-pi/pi-utils";
+import { getInstallId } from "@oh-my-pi/pi-utils/dirs";
+import { $env, $flag } from "@oh-my-pi/pi-utils/env";
+import { fetchWithRetry } from "@oh-my-pi/pi-utils/fetch-retry";
+import { structuredCloneJSON } from "@oh-my-pi/pi-utils/json";
+import { parseStreamingJson } from "@oh-my-pi/pi-utils/json-parse";
+import * as logger from "@oh-my-pi/pi-utils/logger";
+import { readSseJson } from "@oh-my-pi/pi-utils/stream";
+import { asRecord } from "@oh-my-pi/pi-utils/type-guards";
 import { type } from "arktype";
 import packageJson from "../../package.json" with { type: "json" };
 import * as AIError from "../error";

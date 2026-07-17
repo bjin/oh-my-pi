@@ -28,7 +28,8 @@ import {
 	StopReason,
 } from "@oh-my-pi/pi-catalog/discovery/devin-gen/exa/codeium_common_pb/codeium_common_pb";
 import { calculateCost } from "@oh-my-pi/pi-catalog/models";
-import { logger, parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils";
+import { parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
+import * as logger from "@oh-my-pi/pi-utils/logger";
 import * as AIError from "../error";
 import type {
 	Api,

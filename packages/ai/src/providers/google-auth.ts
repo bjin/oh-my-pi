@@ -15,7 +15,9 @@
 import { Buffer } from "node:buffer";
 import * as os from "node:os";
 import * as path from "node:path";
-import { $envpos, isEnoent, logger } from "@oh-my-pi/pi-utils";
+import { $envpos } from "@oh-my-pi/pi-utils/env";
+import { isEnoent } from "@oh-my-pi/pi-utils/fs-error";
+import * as logger from "@oh-my-pi/pi-utils/logger";
 import * as AIError from "../error";
 import type { FetchImpl } from "../types";
 import { raceWithSignal } from "../utils/abort";

@@ -1,4 +1,4 @@
-import { $pickenv } from "@oh-my-pi/pi-utils";
+import { $pickenv } from "@oh-my-pi/pi-utils/env";
 import { isFoundryEnabled } from "../utils/foundry";
 import type { OAuthCredentials, OAuthLoginCallbacks } from "./oauth/types";
 import type { ProviderDefinition } from "./types";

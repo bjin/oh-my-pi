@@ -8,6 +8,7 @@ import { buildModel } from "@oh-my-pi/pi-catalog/build";
 import { writeModelCache } from "@oh-my-pi/pi-catalog/model-cache";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { resetSettingsForTest, Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
+import { validateStrictOpenAICompat } from "@oh-my-pi/pi-coding-agent/openai-compat-probe";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";
 import { removeSyncWithRetries, Snowflake } from "@oh-my-pi/pi-utils";
 
@@ -533,6 +534,48 @@ describe("ModelRegistry", () => {
 	});
 
 	describe("provider compat overrides", () => {
+		const expandedSparseCompat = {
+			enableGeminiThinkingLoopGuard: true,
+			reasoningDisableMode: "qwen-template-false",
+			omitReasoningEffort: true,
+			includeEncryptedReasoning: false,
+			filterReasoningHistory: true,
+			thinkingKeep: false,
+			requiresReasoningContentForAllAssistantTurns: true,
+			replayReasoningContent: true,
+			qwenPreserveThinking: true,
+			supportsNamedToolChoice: false,
+			promptCacheSessionHeader: "x-grok-conv-id",
+			toolSchemaFlavor: "moonshot-mfjs",
+			supportsSamplingParams: false,
+			reasoningDeltasMayBeCumulative: true,
+			stripDeepseekSpecialTokens: true,
+			streamMarkupHealingPattern: "dsml",
+			emptyLengthFinishIsContextError: true,
+			usesOpenAIToolCallIdLimit: true,
+			whenThinking: {
+				enableGeminiThinkingLoopGuard: false,
+				reasoningDisableMode: "openrouter-enabled-false",
+				omitReasoningEffort: false,
+				includeEncryptedReasoning: true,
+				filterReasoningHistory: false,
+				thinkingKeep: "all",
+				requiresReasoningContentForAllAssistantTurns: false,
+				replayReasoningContent: false,
+				qwenPreserveThinking: false,
+				supportsNamedToolChoice: true,
+				promptCacheSessionHeader: "x-grok-conv-id",
+				toolSchemaFlavor: "none",
+				supportsSamplingParams: true,
+				reasoningDeltasMayBeCumulative: false,
+				stripDeepseekSpecialTokens: false,
+				streamMarkupHealingPattern: "thinking",
+				emptyLengthFinishIsContextError: false,
+				usesOpenAIToolCallIdLimit: false,
+			},
+		} satisfies OpenAICompat;
+		let expandedCompat: ModelRegistry;
+		let permissiveUnknownCompat: ModelRegistry;
 		let providerCompat: ModelRegistry;
 		let customCompat: ModelRegistry;
 		let customModelCompat: ModelRegistry;
@@ -661,6 +704,46 @@ describe("ModelRegistry", () => {
 					},
 				},
 			});
+			expandedCompat = readonlyRegistry({
+				providers: {
+					"expanded-compat": {
+						baseUrl: "https://example.com/v1",
+						apiKey: "EXPANDED_COMPAT_KEY",
+						api: "openai-completions",
+						models: [
+							{
+								id: "reasoning-model",
+								reasoning: true,
+								input: ["text"],
+								cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+								contextWindow: 1000,
+								maxTokens: 100,
+								compat: expandedSparseCompat,
+							},
+						],
+					},
+				},
+			});
+			permissiveUnknownCompat = readonlyRegistry({
+				providers: {
+					"permissive-compat": {
+						baseUrl: "https://example.com/v1",
+						apiKey: "PERMISSIVE_COMPAT_KEY",
+						api: "openai-completions",
+						compat: { unknownCompatibilityFlag: true },
+						models: [
+							{
+								id: "model",
+								reasoning: false,
+								input: ["text"],
+								cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+								contextWindow: 1000,
+								maxTokens: 100,
+							},
+						],
+					},
+				},
+			});
 		});
 
 		test("provider-level compat applies to built-in models", () => {
@@ -713,6 +796,31 @@ describe("ModelRegistry", () => {
 			const compat = getOpenAICompat(model);
 			expect(compat?.supportsUsageInStreaming).toBe(true);
 			expect(compat?.maxTokensField).toBe("max_completion_tokens");
+		});
+		test("new OpenAI compat keys round-trip sparsely and resolve in both views", () => {
+			const model = expandedCompat.find("expanded-compat", "reasoning-model");
+			expect(expandedCompat.getError()).toBeUndefined();
+			expect(model?.compatConfig).toEqual(expandedSparseCompat);
+			expect(model?.compat).toMatchObject({
+				...expandedSparseCompat,
+				whenThinking: expect.objectContaining(expandedSparseCompat.whenThinking),
+			});
+		});
+
+		test("strict probe validation rejects unknown API keys without tightening models config", () => {
+			expect(() => validateStrictOpenAICompat({ unknownCompatibilityFlag: true })).toThrow(
+				"Unknown OpenAI compatibility key",
+			);
+			expect(() => validateStrictOpenAICompat({ supportsEagerToolInputStreaming: true })).toThrow(
+				"Unknown OpenAI compatibility key",
+			);
+			expect(() => validateStrictOpenAICompat({ whenThinking: { whenThinking: { supportsStore: true } } })).toThrow(
+				"Nested whenThinking",
+			);
+			expect(permissiveUnknownCompat.getError()).toBeUndefined();
+			expect(permissiveUnknownCompat.find("permissive-compat", "model")?.compatConfig).toMatchObject({
+				unknownCompatibilityFlag: true,
+			});
 		});
 	});
 

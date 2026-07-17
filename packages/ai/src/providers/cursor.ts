@@ -103,13 +103,9 @@ import {
 	WriteSuccessSchema,
 } from "@oh-my-pi/pi-catalog/discovery/cursor-gen/agent_pb";
 import { calculateCost } from "@oh-my-pi/pi-catalog/models";
-import {
-	$env,
-	parseJsonWithRepair,
-	parseStreamingJson,
-	parseStreamingJsonThrottled,
-	sanitizeText,
-} from "@oh-my-pi/pi-utils";
+import { $env } from "@oh-my-pi/pi-utils/env";
+import { parseJsonWithRepair, parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
+import { sanitizeText } from "@oh-my-pi/pi-utils/sanitize-text";
 import * as AIError from "../error";
 import type {
 	Api,

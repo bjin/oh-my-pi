@@ -7,15 +7,12 @@ import { mapEffortToAnthropicAdaptiveEffort } from "@oh-my-pi/pi-catalog/model-t
 import { calculateCost, getBundledModel } from "@oh-my-pi/pi-catalog/models";
 import { isAnthropicOAuthToken } from "@oh-my-pi/pi-catalog/utils";
 import { parseGitHubCopilotApiKey } from "@oh-my-pi/pi-catalog/wire/github-copilot";
-import {
-	$env,
-	getInstallId,
-	isEnoent,
-	logger,
-	parseJsonWithRepair,
-	parseStreamingJsonThrottled,
-	readSseEvents,
-} from "@oh-my-pi/pi-utils";
+import { getInstallId } from "@oh-my-pi/pi-utils/dirs";
+import { $env } from "@oh-my-pi/pi-utils/env";
+import { isEnoent } from "@oh-my-pi/pi-utils/fs-error";
+import { parseJsonWithRepair, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
+import * as logger from "@oh-my-pi/pi-utils/logger";
+import { readSseEvents } from "@oh-my-pi/pi-utils/stream";
 import { renderDemotedThinking } from "../dialect/demotion";
 import * as AIError from "../error";
 import { getEnvApiKey, OUTPUT_FALLBACK_BUFFER } from "../stream";

@@ -1,4 +1,4 @@
-import { $flag } from "@oh-my-pi/pi-utils";
+import { $flag } from "@oh-my-pi/pi-utils/env";
 import { upgradeJsonSchemaTo202012 } from "./draft";
 import { tryEnforceStrictSchema } from "./normalize";
 

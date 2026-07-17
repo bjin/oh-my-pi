@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoided loading native addons as a side effect of importing the streaming API and provider modules.
+
 ## [17.0.2] - 2026-07-17
 
 ### Fixed

@@ -1,4 +1,4 @@
-import { extractHttpStatusFromError } from "@oh-my-pi/pi-utils";
+import { extractHttpStatusFromError } from "@oh-my-pi/pi-utils/fetch-retry";
 import { isOAuthExpiry, isUsageLimit } from "./flags";
 import { isUsageLimitOutcome } from "./rate-limit";
 

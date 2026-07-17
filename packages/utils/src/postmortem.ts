@@ -9,7 +9,7 @@
 import * as fs from "node:fs";
 import inspector from "node:inspector";
 import { isMainThread } from "node:worker_threads";
-import { logger } from ".";
+import * as logger from "./logger";
 import { restoreTerminalStderr } from "./stderr-guard";
 
 // Cleanup reasons, in order of priority/meaning.

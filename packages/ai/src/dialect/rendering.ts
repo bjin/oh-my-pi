@@ -1,4 +1,4 @@
-import { stringifyJson as stringifyJsonValue } from "@oh-my-pi/pi-utils";
+import { stringifyJson as stringifyJsonValue } from "@oh-my-pi/pi-utils/json";
 import type { AssistantMessage, Message, ToolCall, ToolResultMessage } from "../types";
 import type { DialectRenderOptions, DialectToolResult } from "./types";
 

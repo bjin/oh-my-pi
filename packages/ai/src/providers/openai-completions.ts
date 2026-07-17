@@ -3,7 +3,8 @@ import { isKimiModelId } from "@oh-my-pi/pi-catalog/identity";
 import { resolveWireModelId } from "@oh-my-pi/pi-catalog/model-thinking";
 import { calculateCost } from "@oh-my-pi/pi-catalog/models";
 import type { ResolvedOpenAICompat } from "@oh-my-pi/pi-catalog/types";
-import { $env, parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils";
+import { $env } from "@oh-my-pi/pi-utils/env";
+import { parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
 import { renderDemotedThinking } from "../dialect/demotion";
 import * as AIError from "../error";
 import { getKimiCommonHeaders } from "../registry/oauth/kimi";
@@ -475,6 +476,8 @@ export interface OpenAICompletionsOptions extends StreamOptions {
 	 * with the variant baked in).
 	 */
 	openrouterVariant?: string;
+	/** @internal Suppress persistence of rejected raw HTTP requests for privacy-sensitive callers. */
+	suppressRejectedRequestDump?: boolean;
 }
 
 type AppliedToolStrictMode = "mixed" | "all_strict" | "none";
@@ -672,15 +675,17 @@ const streamOpenAICompletionsOnce = (
 				activeReasoningEffortFallbackKey = reasoningEffortFallbackKey;
 				activeRequestParams = params;
 				options?.onPayload?.(params);
-				rawRequestDump = {
-					provider: model.provider,
-					api: output.api,
-					model: model.id,
-					method: "POST",
-					url: completionsUrl,
-					headers: requestHeaders,
-					body: params,
-				};
+				rawRequestDump = options?.suppressRejectedRequestDump
+					? undefined
+					: {
+							provider: model.provider,
+							api: output.api,
+							model: model.id,
+							method: "POST",
+							url: completionsUrl,
+							headers: requestHeaders,
+							body: params,
+						};
 				let requestTimeout: NodeJS.Timeout | undefined;
 				if (requestTimeoutMs !== undefined) {
 					requestTimeout = setTimeout(

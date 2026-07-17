@@ -20,17 +20,12 @@ import {
 	removeBlankCoreWeaveProjectHeaders,
 } from "@oh-my-pi/pi-catalog/wire/coreweave";
 import { parseGitHubCopilotApiKey } from "@oh-my-pi/pi-catalog/wire/github-copilot";
-import {
-	$env,
-	classifyJsonPrefix,
-	extractHttpStatusFromError,
-	logger,
-	parseImageMetadata,
-	parseStreamingJson,
-	parseStreamingJsonThrottled,
-	stringifyJson,
-	structuredCloneJSON,
-} from "@oh-my-pi/pi-utils";
+import { $env } from "@oh-my-pi/pi-utils/env";
+import { extractHttpStatusFromError } from "@oh-my-pi/pi-utils/fetch-retry";
+import { stringifyJson, structuredCloneJSON } from "@oh-my-pi/pi-utils/json";
+import { classifyJsonPrefix, parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
+import * as logger from "@oh-my-pi/pi-utils/logger";
+import { parseImageMetadata } from "@oh-my-pi/pi-utils/mime";
 import * as AIError from "../error";
 import {
 	type Api,

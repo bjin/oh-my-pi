@@ -1,4 +1,4 @@
-import { isRetryableError, isUnexpectedSocketCloseMessage } from "@oh-my-pi/pi-utils";
+import { isRetryableError, isUnexpectedSocketCloseMessage } from "@oh-my-pi/pi-utils/fetch-retry";
 import {
 	isRetryableStreamEnvelopeError,
 	isTransientStreamParseError,

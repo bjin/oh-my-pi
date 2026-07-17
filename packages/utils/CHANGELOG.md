@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the postmortem module importing the package barrel recursively, which unnecessarily initialized unrelated process and native-runtime modules during cleanup setup.
+
 ## [17.0.2] - 2026-07-17
 
 ### Added

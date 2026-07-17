@@ -1,4 +1,4 @@
-import { fetchWithRetry } from "@oh-my-pi/pi-utils";
+import { fetchWithRetry } from "@oh-my-pi/pi-utils/fetch-retry";
 import { Effort } from "../effort";
 import { isGlm52ReasoningEffortModelId } from "../identity/family";
 import type { ModelManagerOptions } from "../model-manager";

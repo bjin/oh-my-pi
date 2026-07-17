@@ -1,5 +1,7 @@
 import { hostMatchesUrl } from "@oh-my-pi/pi-catalog/hosts";
-import { $flag, logger, structuredCloneJSON } from "@oh-my-pi/pi-utils";
+import { $flag } from "@oh-my-pi/pi-utils/env";
+import { structuredCloneJSON } from "@oh-my-pi/pi-utils/json";
+import * as logger from "@oh-my-pi/pi-utils/logger";
 import * as AIError from "../error";
 import { getEnvApiKey } from "../stream";
 import type {

@@ -12,7 +12,8 @@ import {
 	getAntigravityUserAgent,
 	getGeminiCliHeaders,
 } from "@oh-my-pi/pi-catalog/wire/gemini-headers";
-import { extractHttpStatusFromError, fetchWithRetry, readSseJson } from "@oh-my-pi/pi-utils";
+import { extractHttpStatusFromError, fetchWithRetry } from "@oh-my-pi/pi-utils/fetch-retry";
+import { readSseJson } from "@oh-my-pi/pi-utils/stream";
 import { type } from "arktype";
 import * as AIError from "../error";
 import type {

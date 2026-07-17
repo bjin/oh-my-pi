@@ -10,7 +10,9 @@
 import type { Effort } from "@oh-my-pi/pi-catalog/effort";
 import { mapEffortToAnthropicAdaptiveEffort, requireSupportedEffort } from "@oh-my-pi/pi-catalog/model-thinking";
 import { calculateCost } from "@oh-my-pi/pi-catalog/models";
-import { $env, $flag, fetchWithRetry, parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils";
+import { $env, $flag } from "@oh-my-pi/pi-utils/env";
+import { fetchWithRetry } from "@oh-my-pi/pi-utils/fetch-retry";
+import { parseStreamingJson, parseStreamingJsonThrottled } from "@oh-my-pi/pi-utils/json-parse";
 import { renderDemotedThinking } from "../dialect/demotion";
 import * as AIError from "../error";
 import type {

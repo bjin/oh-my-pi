@@ -14,8 +14,9 @@
  *      that points at `./src/*.ts(x)` is repointed to `./dist/types/*.d.ts`,
  *      `dist/types` (plus `dist/client` for `stats`) is added to `files`,
  *      and packages with a `publishBin` override get their `bin` swapped to
- *      the prepack bundle (coding-agent: `src/cli.ts` → `dist/cli.js`). The
- *      on-repo manifest keeps pointing at source so local dev and source
+ *      the prepack bundle (coding-agent: `omp` → `dist/cli.js`; the standalone
+ *      `omp-openai-compat` Bun executable remains a shipped TypeScript source).
+ *      The on-repo manifest keeps pointing at source so local dev and source
  *      installs (`bun link`, `install.sh --source`) work without a build.
  *   3. Pack with `bun pm pack` (resolves the `catalog:`/`workspace:`
  *      protocols npm cannot, and runs each package's `prepack` lifecycle),
@@ -102,7 +103,11 @@ export const packages: PublishPackage[] = [
 		extraTypeConfigs: ["tsconfig.publish.client.json"],
 	},
 	{ dir: "packages/agent", kind: "typescript" },
-	{ dir: "packages/coding-agent", kind: "typescript", publishBin: { omp: "dist/cli.js" } },
+	{
+		dir: "packages/coding-agent",
+		kind: "typescript",
+		publishBin: { omp: "dist/cli.js", "omp-openai-compat": "src/openai-compat-probe-cli.ts" },
+	},
 ];
 
 function rewriteSrcPath(value: string): string {

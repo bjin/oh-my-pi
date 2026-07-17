@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added the standalone `omp-openai-compat` CLI and public probe API for deriving, validating, minimizing, and safely reporting OpenAI Chat Completions compatibility profiles.
+
 ## [17.0.2] - 2026-07-17
 
 ### Added

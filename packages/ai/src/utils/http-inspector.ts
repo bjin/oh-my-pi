@@ -1,5 +1,6 @@
 import * as path from "node:path";
-import { getLogsDir, isBunTestRuntime } from "@oh-my-pi/pi-utils";
+import { getLogsDir } from "@oh-my-pi/pi-utils/dirs";
+import { isBunTestRuntime } from "@oh-my-pi/pi-utils/env";
 import * as AIError from "../error/flags";
 import { isCopilotTransientModelError } from "./retry.js";
 import { formatErrorMessageWithRetryAfter } from "./retry-after.js";

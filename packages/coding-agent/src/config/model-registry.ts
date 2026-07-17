@@ -65,10 +65,14 @@ import type { ApiKeyResolver, FetchImpl } from "@oh-my-pi/pi-ai";
 import { registerOAuthProvider, unregisterOAuthProviders } from "@oh-my-pi/pi-ai/oauth";
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@oh-my-pi/pi-ai/oauth/types";
 import { getBundledModelReferenceIndex, resolveModelReference } from "@oh-my-pi/pi-catalog/identity";
-import { isBunTestRuntime, isRecord, logger, wrapFetchForExtraCa } from "@oh-my-pi/pi-utils";
+import { isBunTestRuntime, logger, wrapFetchForExtraCa } from "@oh-my-pi/pi-utils";
 import { parseModelString, resolveProviderModelReference } from "../config/model-resolver";
 import type { AuthStorage, OAuthCredential } from "../session/auth-storage";
 import { type ApiKeyResolverModel, type ApiKeyResolverOptions, createApiKeyResolver } from "./api-key-resolver";
+import { mergeCompat, toModelSpec } from "./model-compat";
+
+export * from "./model-compat";
+
 import type { ConfigError, ConfigFile } from "./config-file";
 import {
 	applyLlamaCppQwenThinking,
@@ -439,22 +443,6 @@ function resolveOAuthAccountIdForAccessToken(
 	return undefined;
 }
 
-function mergeCompat<TBase extends object, TOverride extends object>(
-	baseCompat: TBase | null | undefined,
-	overrideCompat: TOverride | null | undefined,
-): (TBase & TOverride) | TBase | TOverride | undefined {
-	if (!baseCompat) return overrideCompat ?? undefined;
-	if (!overrideCompat) return baseCompat;
-
-	const merged: Record<string, unknown> = { ...(baseCompat as Record<string, unknown>) };
-	for (const [key, overrideValue] of Object.entries(overrideCompat)) {
-		const baseValue = (baseCompat as Record<string, unknown>)[key];
-		merged[key] =
-			isRecord(baseValue) && isRecord(overrideValue) ? mergeCompat(baseValue, overrideValue) : overrideValue;
-	}
-	return merged as TBase & TOverride;
-}
-
 function mergeRemoteCompactionConfig(
 	baseConfig: RemoteCompactionConfig<Api> | undefined,
 	overrideConfig: RemoteCompactionConfig<Api> | undefined,
@@ -469,15 +457,6 @@ function mergeProviderRemoteCompactionConfig(
 	providerConfig: RemoteCompactionConfig<Api> | undefined,
 ): RemoteCompactionConfig<Api> | undefined {
 	return mergeRemoteCompactionConfig(providerConfig, modelConfig);
-}
-
-/**
- * Project a built model back to spec shape for the model-manager/cache
- * boundary: sparse compat comes from `compatConfig`, never from the resolved
- * record.
- */
-function toModelSpec<TApi extends Api>(model: Model<TApi>): ModelSpec<TApi> {
-	return { ...model, compat: model.compatConfig } as ModelSpec<TApi>;
 }
 
 /**
