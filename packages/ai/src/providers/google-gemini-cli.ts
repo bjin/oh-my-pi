@@ -12,7 +12,7 @@ import {
 	getAntigravityUserAgent,
 	getGeminiCliHeaders,
 } from "@oh-my-pi/pi-catalog/wire/gemini-headers";
-import { extractHttpStatusFromError, fetchWithRetry, readSseJson } from "@oh-my-pi/pi-utils";
+import { extractHttpStatusFromError, fetchWithRetry, logger, readSseJson } from "@oh-my-pi/pi-utils";
 import * as AIError from "../error";
 import type {
 	Api,
@@ -290,6 +290,14 @@ export interface AntigravityProviderSessionState extends ProviderSessionState {
 	sessionId?: string;
 	stepIndex?: number;
 	lastExecutionId?: string;
+	/**
+	 * Wire model ids whose system prompt is sent inside the first user turn
+	 * instead of `systemInstruction`. Populated after Cloud Code answers a
+	 * top-level `systemInstruction` with a synthetic 429 (see
+	 * {@link AIError.isAntigravitySynthetic429}); sticky for the conversation so
+	 * later turns neither re-trigger the rejection nor churn the prompt layout.
+	 */
+	foldedSystemInstructionModels?: Set<string>;
 }
 
 const ANTIGRAVITY_PROVIDER_SESSION_STATE_KEY = "google-antigravity-session-state";
@@ -432,7 +440,6 @@ interface CloudCodeAssistRequest {
 		};
 		labels?: Record<string, string>;
 	};
-	requestType?: string;
 	userAgent?: string;
 	requestId?: string;
 }
@@ -588,7 +595,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli"> = (
 					: {}),
 				...options?.headers,
 			};
-			const requestBodyJson = JSON.stringify(requestBody);
+			let requestBodyJson = JSON.stringify(requestBody);
 			rawRequestDump = {
 				provider: model.provider,
 				api: output.api,
@@ -947,18 +954,42 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli"> = (
 							maxDelayMs: options?.maxRetryDelayMs ?? RATE_LIMIT_BUDGET_MS,
 							fetch: options?.fetch,
 							timeout: false,
+							// A synthetic 429 is a deterministic rejection of this payload;
+							// replaying it only burns attempts. Hand it back for the fold below.
+							shouldRetryResponse: isAntigravity
+								? (res, bodyText) => !AIError.isAntigravitySynthetic429(res.status, bodyText)
+								: undefined,
 						});
 					} finally {
 						watchdog.clear();
 					}
 
 					if (!response.ok) {
-						if (AIError.isTransientStatus(response.status)) {
-							if (!isLastEndpoint) {
-								continue;
-							}
-						}
 						const errorText = await response.text();
+						// Cloud Code rejects a flagged top-level systemInstruction with a
+						// detail-free 429 while quota remains. Re-run this endpoint once with
+						// the system prompt folded into the first user turn and keep that
+						// layout for the model; a second rejection falls through below.
+						if (
+							isAntigravity &&
+							AIError.isAntigravitySynthetic429(response.status, errorText) &&
+							foldSystemInstruction(requestBody.request)
+						) {
+							if (providerState) {
+								providerState.foldedSystemInstructionModels ??= new Set();
+								providerState.foldedSystemInstructionModels.add(requestBody.model);
+							}
+							logger.warn("Antigravity synthetic 429; folding system prompt into first user turn", {
+								model: requestBody.model,
+								endpoint,
+							});
+							requestBodyJson = JSON.stringify(requestBody);
+							i--;
+							continue;
+						}
+						if (AIError.isTransientStatus(response.status) && !isLastEndpoint) {
+							continue;
+						}
 						const validationUrl = extractGoogleValidationUrl(errorText);
 						const errorMessage = validationUrl
 							? formatGoogleValidationRequiredMessage(
@@ -1208,6 +1239,25 @@ function normalizeAntigravityTools(
 	}));
 }
 
+/** Prepend parts to the first user turn, opening one when the transcript starts elsewhere. */
+function prependToFirstUserTurn(contents: Content[], parts: { text: string }[]): void {
+	const first = contents[0];
+	if (first?.role === "user") {
+		first.parts = [...parts, ...(first.parts ?? [])];
+	} else {
+		contents.unshift({ role: "user", parts });
+	}
+}
+
+/** Move `systemInstruction` into the first user turn. False when there was nothing to move. */
+function foldSystemInstruction(request: CloudCodeAssistRequest["request"]): boolean {
+	const parts = request.systemInstruction?.parts;
+	if (!parts?.length) return false;
+	prependToFirstUserTurn(request.contents, parts);
+	delete request.systemInstruction;
+	return true;
+}
+
 interface AntigravityRequestEnvelope {
 	sessionId: string;
 	requestId: string;
@@ -1306,13 +1356,24 @@ export function buildRequest(
 		contents,
 	};
 
+	const wireModelId = options.requestModelId ?? model.requestModelId ?? model.id;
+	const antigravityState = isAntigravity
+		? getAntigravityProviderSessionState(options.providerSessionState)
+		: undefined;
+
 	// System instruction is an object with parts, not a plain string. Antigravity
-	// tags it with role "user" to mirror the real client.
+	// tags it with role "user" to mirror the real client, unless an earlier
+	// synthetic 429 moved this model's system prompt into the first user turn.
 	if (systemPrompts.length > 0) {
-		request.systemInstruction = {
-			...(isAntigravity ? { role: "user" } : {}),
-			parts: systemPrompts.map(text => ({ text })),
-		};
+		const parts = systemPrompts.map(text => ({ text }));
+		if (antigravityState?.foldedSystemInstructionModels?.has(wireModelId)) {
+			prependToFirstUserTurn(contents, parts);
+		} else {
+			request.systemInstruction = {
+				...(isAntigravity ? { role: "user" } : {}),
+				parts,
+			};
+		}
 	}
 
 	if (context.tools && context.tools.length > 0) {
@@ -1365,8 +1426,6 @@ export function buildRequest(
 		};
 	}
 
-	const wireModelId = options.requestModelId ?? model.requestModelId ?? model.id;
-
 	if (isAntigravity) {
 		// The real client sends a fixed per-model output cap independent of the
 		// thinking budget; reassign so it keeps its slot ahead of thinkingConfig.
@@ -1374,8 +1433,7 @@ export function buildRequest(
 		if (profile) {
 			generationConfig.maxOutputTokens = profile.maxOutputTokens;
 		}
-		const state = getAntigravityProviderSessionState(options.providerSessionState);
-		const envelope = buildAntigravityRequestEnvelope(model, context, wireModelId, state);
+		const envelope = buildAntigravityRequestEnvelope(model, context, wireModelId, antigravityState);
 		request.labels = envelope.labels;
 		if (Object.keys(generationConfig).length > 0) {
 			request.generationConfig = generationConfig;
@@ -1386,8 +1444,9 @@ export function buildRequest(
 			requestId: envelope.requestId,
 			request,
 			model: wireModelId,
+			// The official client never sends `requestType`; `"agent"` arms Cloud Code's
+			// systemInstruction filter, which answers with a detail-free 429.
 			userAgent: "antigravity",
-			requestType: "agent",
 		};
 	}
 

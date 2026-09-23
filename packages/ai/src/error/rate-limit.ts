@@ -129,6 +129,26 @@ function parseJsonBody(errorMessage: string): Record<string, unknown> | undefine
 	}
 }
 
+const GOOGLE_GENERIC_RESOURCE_EXHAUSTED_MESSAGE = "Resource has been exhausted (e.g. check quota).";
+
+/**
+ * Cloud Code Assist's synthetic Antigravity rejection: 429 `RESOURCE_EXHAUSTED`
+ * with Google's generic quota boilerplate and no `details`, returned while quota
+ * remains when its filter flags the request's `systemInstruction`. Real quota
+ * and rate limits carry ErrorInfo/RetryInfo details or "exhausted your capacity"
+ * wording, so they never match.
+ */
+export function isAntigravitySynthetic429(status: number | undefined, body: string): boolean {
+	if (status !== 429) return false;
+	const error = asRecord(parseJsonBody(body)?.error);
+	return (
+		error?.status === "RESOURCE_EXHAUSTED" &&
+		!Array.isArray(error.details) &&
+		typeof error.message === "string" &&
+		error.message.includes(GOOGLE_GENERIC_RESOURCE_EXHAUSTED_MESSAGE)
+	);
+}
+
 /**
  * Classify structured Google RESOURCE_EXHAUSTED bodies before consulting text.
  * Cloud Code Assist prefixes the JSON with its HTTP error label, so accept an
